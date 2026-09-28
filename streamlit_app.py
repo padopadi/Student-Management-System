@@ -1,14 +1,16 @@
+import os
 import uuid
 import requests
 import streamlit as st
 
 st.set_page_config(page_title="Student Database Assistant", page_icon="🎓")
 
-import os
+# Read base backend URL from environment or Streamlit secrets, defaulting to localhost
+BACKEND_BASE_URL = os.getenv("BACKEND_URL", "http://127.0.0.1:8000").rstrip("/")
+CHAT_URL = f"{BACKEND_BASE_URL}/chat"
+STUDENTS_URL = f"{BACKEND_BASE_URL}/students"
 
-API_URL = os.getenv("API_URL", "http://127.0.0.1:8000/chat")
-
-# 1. Initialize session state FIRST
+# 1. Initialize session state
 if "session_id" not in st.session_state:
     st.session_state.session_id = str(uuid.uuid4())
 
@@ -19,19 +21,18 @@ if "messages" not in st.session_state:
 st.title("🎓 Student AI Database Assistant")
 
 with st.sidebar:
-    st.markdown("---")
     st.subheader("Database Overview")
     if st.button("📊 View All Students", use_container_width=True):
         try:
-            students_res = requests.get(
-                "http://127.0.0.1:8000/students", timeout=10
-            )
+            students_res = requests.get(STUDENTS_URL, timeout=15)
             if students_res.status_code == 200:
                 st.dataframe(students_res.json())
             else:
-                st.warning("Failed to fetch students.")
+                st.warning(f"Failed to fetch students (Status: {students_res.status_code})")
         except Exception as e:
-            st.error(f"Error: {e}")
+            st.error(f"Error connecting to backend: {e}")
+
+    st.markdown("---")
     st.subheader("Session Controls")
     if st.button("🔄 New Conversation", use_container_width=True):
         st.session_state.session_id = str(uuid.uuid4())
@@ -56,7 +57,7 @@ if prompt := st.chat_input("Ask a question about any student..."):
         with st.spinner("Searching records..."):
             try:
                 response = requests.post(
-                    API_URL,
+                    CHAT_URL,
                     json={
                         "question": prompt,
                         "session_id": st.session_state.session_id,
