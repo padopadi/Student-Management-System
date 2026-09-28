@@ -4,7 +4,9 @@ import streamlit as st
 
 st.set_page_config(page_title="Student Database Assistant", page_icon="🎓")
 
-API_URL = "http://127.0.0.1:8000/chat"
+import os
+
+API_URL = os.getenv("API_URL", "http://127.0.0.1:8000/chat")
 
 # 1. Initialize session state FIRST
 if "session_id" not in st.session_state:
